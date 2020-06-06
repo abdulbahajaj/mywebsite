@@ -1,19 +1,28 @@
 (ns website.core
-    (:require
-      [reagent.core :as r]
-      [reagent.dom :as d]))
+  (:require
+   [website.navbar :as navbar]
+   [website.aboutme :as aboutme]
+   [reagent.core :as r]
+   [reagent.dom :as d]))
 
 ;; -------------------------
 ;; Views
 
-(defn home-page []
-  [:div [:h2 "Welcome to Reagent"]])
+(defn button [text link alignment])
+
+(defn main-wrapper []
+  [:div.main-wrapper
+   [navbar/create
+    :name "Abdul Bahajaj"
+    :linkedin "https://www.linkedin.com/in/abdul-bahajaj-016a9337"
+    :github "https://github.com/abdulbahajaj"]
+   [aboutme/create]])
 
 ;; -------------------------
 ;; Initialize app
 
 (defn mount-root []
-  (d/render [home-page] (.getElementById js/document "app")))
+  (d/render [main-wrapper] (.getElementById js/document "app")))
 
 (defn init! []
   (mount-root))

@@ -1,0 +1,85 @@
+resources:
+  - name: website-git
+    type: git
+    source:
+      uri: https://github.com/abdulbahajaj/mywebsite
+
+jobs:
+  - name: publish-website
+    public: true
+    plan:
+
+      - get: website-git
+        trigger: true
+
+      - task: build-cljs
+        config:
+          platform: linux
+          inputs:
+            - name: website-git
+          outputs:
+            - name: built-website
+          image_resource:
+            type: registry-image
+            source:
+              repository: clojure
+          run:
+            path: /bin/bash
+            args:
+              - -c
+              - |
+                set -euxo pipefail
+                (cd website-git && lein cljsbuild once)
+                cp -r website-git/public/* built-website
+                ls -laR
+
+      - task: build-sass
+        config:
+          platform: linux
+          inputs:
+            - name: built-website
+          outputs:
+            - name: built-website
+          image_resource:
+            type: registry-image
+            source:
+              repository: node
+          run:
+            path: /bin/bash
+            args:
+              - -c
+              - |
+                set -euxo pipefail
+                npm install -g sass
+                (cd built-website/css/ && sass site.sass site.css)
+                ls -laR
+      
+      - task: publish
+        config:
+          platform: linux
+          inputs:
+            - name: website-git
+            - name: built-website
+          image_resource:
+            type: registry-image
+            source:
+              repository: node
+          run:
+            path: /bin/bash
+            args:
+              - -c
+              - |
+                set -euxo pipefail
+                git config --global user.email "abdulbahajaj@gmail.com"
+                git config --global user.name "abdul bahajaj"
+                export commithash=$(cd website-git && git rev-parse --short HEAD)
+                git clone https://github.com/abdulbahajaj/abdulbahajaj.github.io.git deployment-git
+                cd deployment-git
+                git status
+                rm -rf *
+                mv ../built-website/* .
+                git add .
+                git commit -m "deploying $commithash"
+                git status
+                git push https://abdulbahajaj:((deployment-git-password))@github.com/abdulbahajaj/abdulbahajaj.github.io.git
+                ls -laR
